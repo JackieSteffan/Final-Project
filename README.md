@@ -5,13 +5,13 @@ Shiny, Tidyverse, Caret, Plotly
 
 ### Code to pull in libraries
   
-`library(shiny)  
+`library(shiny)`  
   
-library(tidyverse)  
+`library(tidyverse)`  
   
-library(caret)  
+`library(caret)`  
   
-library(plotly)`
+`library(plotly)`
 
 ### Code to run Shiny App
   
