@@ -150,6 +150,30 @@ shinyServer(function(input, output, session) {
     })
     
     #Model 1: W/L classification
+    #linear model
+    winMod <- reactive({
+      if (input$numVar1 == 3){
+        touchdownMod <- glm(Win_Loss ~ Rushing_Yards + Sacks + Pass_Completions, data = football, family = "gaussian")
+        }
+      else if (input$numVar1 == 2){
+        touchdownMod <- glm(Win_Loss ~ Rushing_Yards + Sacks, data = football)
+      }
+      else {touchdownMod <- glm(Win_Loss ~ Rushing_Yards, data = football)}
+    })
+    #Print Model 
+    output$winCoeff <- renderPrint({
+      winMod <- winMod()
+      winMod$coefficients
+    })
+    
+    #Predictions
+    output$winPred <- renderText({
+      winMod<- winMod()
+      #td <- touchdownMod$coefficients[[1]] + touchdownMod$coefficients[[2]]*input$inTotOff + touchdownMod$coefficients[[3]]*input$inYardsPlay+ touchdownMod$coefficients[[4]]*input$in3DownConv
+      win<- predict(winMod, data.frame(Rushing_Yards = c(input$inRushYds), Sacks = c(input$inSacks), Pass_Completions = c(input$inPassComp)))
+      round(win,0)
+    })
+    #Tree
     colnames(football) <- make.names(colnames(football))
     winTree <- reactive({
       set.seed(91)
@@ -163,7 +187,7 @@ shinyServer(function(input, output, session) {
                          preProcess = c("center", "scale"))
       winTree <- classTree$finalModel
       })
-    output$plotWinTree <- renderPlot({
+        output$plotWinTree <- renderPlot({
       set.seed(91)
       winTree <- winTree()
       plot(winTree, uniform=TRUE,
@@ -174,9 +198,9 @@ shinyServer(function(input, output, session) {
     #Model 2 Predict TD
     touchdownMod <- reactive({
       if (input$numVar == 3){
-      touchdownMod <- lm(Touchdowns ~ Total_offense + Yards.Play + Third_Down_Conversion, data = football)}
+      touchdownMod <- lm(Touchdowns ~ Total_offense + Yards_Play + Third_Down_Conversion, data = football)}
       else if (input$numVar == 2){
-        touchdownMod <- lm(Touchdowns ~ Total_offense + Yards.Play, data = football)
+        touchdownMod <- lm(Touchdowns ~ Total_offense + Yards_Play, data = football)
       }
       else {touchdownMod <- lm(Touchdowns ~ Total_offense, data = football)}
     })
@@ -190,7 +214,7 @@ shinyServer(function(input, output, session) {
     output$tdPred <- renderText({
       touchdownMod<- touchdownMod()
       #td <- touchdownMod$coefficients[[1]] + touchdownMod$coefficients[[2]]*input$inTotOff + touchdownMod$coefficients[[3]]*input$inYardsPlay+ touchdownMod$coefficients[[4]]*input$in3DownConv
-      td<- predict(touchdownMod, data.frame(Total_offense = c(input$inTotOff), Yards.Play = c(input$inYardsPlay), Third_Down_Conversion = c(input$in3DownConv)))
+      td<- predict(touchdownMod, data.frame(Total_offense = c(input$inTotOff), Yards_Play = c(input$inYardsPlay), Third_Down_Conversion = c(input$in3DownConv)))
       round(td,0)
     })
     
