@@ -10,7 +10,6 @@
 library(shiny)
 library(tidyverse)
 football <- read_csv("State_Football.csv")
-library(ggplot2)
 library(caret)
 library(plotly)
 
@@ -21,11 +20,11 @@ shinyServer(function(input, output, session) {
   filtDat <- reactive({
     if (input$ACC){
       if(input$Atlantic){
-        filtDat <- football%>% filter(Atlantic==1)
+        filtDat <- football%>% filter(Atlantic==1) #Atlantic selected
       }
-      else {filtDat <- football%>% filter(ACC==1)}
+      else {filtDat <- football%>% filter(ACC==1)} #ACC selected
     }
-    else {filtDat <- football}
+    else {filtDat <- football} #no checkboxes selected
     filtDat
   })
   #y variable
@@ -33,37 +32,37 @@ shinyServer(function(input, output, session) {
     football <- filtDat()
     #When Yards selected
     if(input$stats == "Yards"){
-      if(input$YardVar == "Total"){
+      if(input$yardVar == "Total"){
         y <- football$Total_offense}
-      else if (input$YardVar == "Rushing") {
+      else if (input$yardVar == "Rushing") {
         y <- football$Rushing_Yards}
       else {
         y <- football$Passing_Yards}}
     #when passing stats selected
     else if (input$stats == "Passing Statistics"){
-      if (input$PassVar == "Pass Attempts") {
+      if (input$passVar == "Pass Attempts") {
         y <-football$Pass_Attempts}
-      else if (input$PassVar == "Pass Completions") {
+      else if (input$passVar == "Pass Completions") {
         y <- football$Pass_Completions}
       else{
         y <- football$Completion_Percentage}}
     #when downs selected
     else if (input$stats == "Downs"){
-      if (input$DownVar == "First Down") {
+      if (input$downVar == "First Down") {
         y <-football$First_Downs      }
       else{
         y <- football$Third_Down_Conversion    }}
     #when turnovers selected
     else if (input$stats == "Turnovers"){
-      if (input$TurnVar == "Interceptions") {
+      if (input$turnVar == "Interceptions") {
         y <- football$Interceptions      }
-      else if (input$TurnVar == "Total Turnovers") {
+      else if (input$turnVar == "Total Turnovers") {
         y <- football$Turnovers      }
       else{
         y <-football$Fumbles      }}
     #when sacks selected
     else {
-      if (input$SackVar == "Number of Sacks") {
+      if (input$sackVar == "Number of Sacks") {
         y <- football$Sacks      }
       else{
         y <- football$Sack_Yards      }}
@@ -74,7 +73,6 @@ shinyServer(function(input, output, session) {
     x<- football$Year
   })
   
-  
   #plotly
   output$plot <- renderPlotly({
     plot1 <- plot_ly(
@@ -82,14 +80,34 @@ shinyServer(function(input, output, session) {
       y = y(), 
       type = 'scatter',
       mode = 'markers')
-    plot1%>%layout(xaxis = list(title = "Year"), yaxis = list(title = y))
-
+    gg <- plot1%>%layout(xaxis = list(title = "Year"), yaxis = list(title = y))
+    vals$gg <- gg
+    print(gg)
   })
   
   #Download Plot
-  # output$downloadPlot <- reactive({
-  #   export(output$plot, file = "image.png")
+  vals <- reactiveValues()
+  # output$downloadPlot <- downloadHandler(
+  #   filename = function(){paste(input$stats, '.pdf', sep = '')},
+  #   
+  #   content = function(file){
+  #     pdf(file, width = 5, height = 5)
+  #     print(vals$gg)
+  #     dev.off()
   #   })
+  
+  output$downloadPlot <- downloadHandler(
+    filename = function() {
+      "plot.png"
+    },
+    content = function(file) {
+      ggsave(file, plot_ly(
+        x = x(),
+        y = y(), 
+        type = 'scatter',
+        mode = 'markers'), width = 16, height = 10.4)
+    }
+  )
 
     #create summary tab table
     output$statTab <- DT::renderDataTable({
@@ -169,11 +187,10 @@ shinyServer(function(input, output, session) {
     #Predictions
     output$winPred <- renderText({
       winMod<- winMod()
-      #td <- touchdownMod$coefficients[[1]] + touchdownMod$coefficients[[2]]*input$inTotOff + touchdownMod$coefficients[[3]]*input$inYardsPlay+ touchdownMod$coefficients[[4]]*input$in3DownConv
       win<- predict(winMod, data.frame(Rushing_Yards = c(input$inRushYds), Sacks = c(input$inSacks), Pass_Completions = c(input$inPassComp)))
       round(win,0)
     })
-    #Tree
+    #Classification Tree
     colnames(football) <- make.names(colnames(football))
     winTree <- reactive({
       set.seed(91)
@@ -187,6 +204,7 @@ shinyServer(function(input, output, session) {
                          preProcess = c("center", "scale"))
       winTree <- classTree$finalModel
       })
+    #plot tree
         output$plotWinTree <- renderPlot({
       set.seed(91)
       winTree <- winTree()
@@ -219,23 +237,26 @@ shinyServer(function(input, output, session) {
     })
     
     # Data table for data tab
-    output$datTab <- DT::renderDataTable({
+    datasetInput <- reactive({
       if (input$subData == "ACC Opponents") {
         football %>% filter(ACC == 1)
       }
       else if (input$subData == "Wins"){
-        football %>% filter(Win_Loss == "Win")
+        football %>% filter(Win_Loss == 1)
       }
       else if (input$subData == "Home Games"){
         football %>% filter(Home_Away == "Home")
       }
       else football
     })
+    output$datTab <- DT::renderDataTable({
+      datasetInput()
+    })
     
     #Download Data
     output$downloadData <- downloadHandler(
       filename = function() {
-        paste(input$dataset, ".csv", sep = "")
+        paste0("footballData.csv")
       },
       content = function(file) {
         write.csv(datasetInput(), file, row.names = FALSE)

@@ -10,7 +10,6 @@
 library(shiny)
 library(tidyverse)
 football <- read_csv("State_Football.csv")
-library(ggplot2)
 library(caret)
 library(plotly)
 
@@ -43,16 +42,16 @@ shinyUI(fluidPage(
                          #Select Variable to view
                          selectInput("stats", "Select Statistic to view", selected = "Yards", choices = c("Yards", "Passing Statistics", "Downs", "Turnovers", "Sacks")),
                          conditionalPanel(condition = "input.stats == 'Yards'",
-                                          selectInput("YardVar", "More Statistics", choices = c("Total", "Rushing", "Passing")))
+                                          selectInput("yardVar", "More Statistics", choices = c("Total", "Rushing", "Passing")))
                      ,
                          conditionalPanel(condition = "input.stats == 'Passing Statistics'",
-                                         selectInput("PassVar", "More Statistics", choices = c("Pass Attempts", "Pass Completions", "Completion Percentage"))),
+                                         selectInput("passVar", "More Statistics", choices = c("Pass Attempts", "Pass Completions", "Completion Percentage"))),
                          conditionalPanel(condition = "input.stats == 'Downs'",
-                                         selectInput("DownVar", "More Statistics", choices = c("First Down", "Third Down Conversion"))),
+                                         selectInput("downVar", "More Statistics", choices = c("First Down", "Third Down Conversion"))),
                          conditionalPanel(condition = "input.stats == 'Turnovers'",
-                                         selectInput("TurnVar", "More Statistics", choices = c("Interceptions", "Fumbles (Both lost and recovered)", "Total Turnovers"))),
+                                         selectInput("turnVar", "More Statistics", choices = c("Interceptions", "Fumbles (Both lost and recovered)", "Total Turnovers"))),
                          conditionalPanel(condition = "input.stats == 'Sacks'",
-                                         selectInput("SackVar", "More Statistics", choices = c("Number of Sacks", "Yards Lost"))),
+                                         selectInput("sackVar", "More Statistics", choices = c("Number of Sacks", "Yards Lost"))),
                      #Against ACC?
                          checkboxInput("ACC", "Against ACC Opponents?", value = F),
                          conditionalPanel(condition = "input.ACC == 1",
@@ -73,9 +72,11 @@ shinyUI(fluidPage(
         tabPanel("Principal Component Analysis",
                  sidebarLayout(
                  sidebarPanel(
+                     #select num of variables
                      sliderInput("PCAIn", "Choose number of variables", min = 3, max = 8, value = 1, step = 1)
                  ),
                  mainPanel(
+                     #plot PCA biplot
                      plotOutput("footballPCA")
                  )
                  )),
@@ -83,31 +84,40 @@ shinyUI(fluidPage(
         tabPanel("Modeling",
                  sidebarLayout(
                    sidebarPanel(
+                       #Change # of variables in model
                        selectInput("numVar1", "Select the # of variables to build our Win/Loss Model", c(1,2,3)),
+                       #model 1 prediction inputs
                        h4("Predict if NC State will win based on the following:"),
                        numericInput("inRushYds", "Rushing Yards", value=0, min=0),
                        conditionalPanel(condition = "input.numVar1 > 1", numericInput("inSacks", "Number of Sacks", value=0, min=0)),
                        conditionalPanel(condition = "input.numVar1 > 2", numericInput("inPassComp", "Pass Completions", value=0, min=0)),
                        br(),
+                       #change vars in model 2
                        selectInput("numVar", "Select the # of variables to build our touchdown Model", c(1,2,3)),
+                       #model 2 prediction inputs
                        h4("Predict the number of touchdowns based on the following:"),
                      numericInput("inTotOff", "Total Offense", value=0, min=0),
                      conditionalPanel(condition = "input.numVar > 1", numericInput("inYardsPlay", "Yards per Play", value=0, min=0)),
                      conditionalPanel(condition = "input.numVar >2", numericInput("in3DownConv", "Third Down Conversion Percentage (0-1)", value=0, min=0, max=1))
                    ),
                    mainPanel(
+                       #model coefficients
                      h4("Model 1: Predict Wins:"),
                      verbatimTextOutput("winCoeff"),
                      br(),
+                     #model prediction
                      h4("Would NC State win this game? (O- No, 1-Yes)"),
                      textOutput("winPred"),
                      br(),
+                     #classification tree
                      h3("and a Tree just for fun"),
                        plotOutput("plotWinTree"),
                      br(),
+                     #model coefficients
                      h4("Model 2, which models the number of touchdowns has the form:"),
                      verbatimTextOutput("tdCoeff2"),
                      br(),
+                     #model 2 prediction
                      h4("The number of touchdowns you would expect is:"),
                      textOutput("tdPred")
                    )
@@ -122,10 +132,11 @@ shinyUI(fluidPage(
                      withMathJax(helpText("Pass Completion is calculated by: $$\\ (passes complete) / \\ (pass attempts)$$"))
                    ),
                    mainPanel (
+                       #data
                      DT::dataTableOutput("datTab")
                    )
                  ))
     )
-    # Sidebar with a slider input for number of bins
+   
     
 ))

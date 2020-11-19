@@ -10,7 +10,6 @@
 library(shiny)
 library(tidyverse)
 football <- read_csv("State_Football.csv")
-library(ggplot2)
 library(caret)
 library(plotly)
 
@@ -74,7 +73,6 @@ shinyServer(function(input, output, session) {
     x<- football$Year
   })
   
-  
   #plotly
   output$plot <- renderPlotly({
     plot1 <- plot_ly(
@@ -82,14 +80,34 @@ shinyServer(function(input, output, session) {
       y = y(), 
       type = 'scatter',
       mode = 'markers')
-    plot1%>%layout(xaxis = list(title = "Year"), yaxis = list(title = y))
-
+    gg <- plot1%>%layout(xaxis = list(title = "Year"), yaxis = list(title = y))
+    vals$gg <- gg
+    print(gg)
   })
   
   #Download Plot
-  # output$downloadPlot <- reactive({
-  #   export(output$plot, file = "image.png")
+  vals <- reactiveValues()
+  # output$downloadPlot <- downloadHandler(
+  #   filename = function(){paste(input$stats, '.pdf', sep = '')},
+  #   
+  #   content = function(file){
+  #     pdf(file, width = 5, height = 5)
+  #     print(vals$gg)
+  #     dev.off()
   #   })
+  
+  output$downloadPlot <- downloadHandler(
+    filename = function() {
+      "plot.png"
+    },
+    content = function(file) {
+      ggsave(file, plot_ly(
+        x = x(),
+        y = y(), 
+        type = 'scatter',
+        mode = 'markers'), width = 16, height = 10.4)
+    }
+  )
 
     #create summary tab table
     output$statTab <- DT::renderDataTable({
@@ -219,7 +237,7 @@ shinyServer(function(input, output, session) {
     })
     
     # Data table for data tab
-    output$datTab <- DT::renderDataTable({
+    datasetInput <- reactive({
       if (input$subData == "ACC Opponents") {
         football %>% filter(ACC == 1)
       }
@@ -231,11 +249,14 @@ shinyServer(function(input, output, session) {
       }
       else football
     })
+    output$datTab <- DT::renderDataTable({
+      datasetInput()
+    })
     
     #Download Data
     output$downloadData <- downloadHandler(
       filename = function() {
-        paste(input$dataset, ".csv", sep = "")
+        paste0("footballData.csv")
       },
       content = function(file) {
         write.csv(datasetInput(), file, row.names = FALSE)

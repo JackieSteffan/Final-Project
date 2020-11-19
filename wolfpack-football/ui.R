@@ -10,7 +10,6 @@
 library(shiny)
 library(tidyverse)
 football <- read_csv("State_Football.csv")
-library(ggplot2)
 library(caret)
 library(plotly)
 
